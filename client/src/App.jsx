@@ -48,15 +48,48 @@ function App() {
     setError(null);
 
     try {
-      const response = await fetch(`http://localhost:3001/api/download?url=${encodeURIComponent(url)}&format=${selectedFormat}`);
+      const downloadUrl = `http://localhost:3001/api/download?url=${encodeURIComponent(url)}&format=${selectedFormat}`;
 
-      const data = await response.json();
+      const response = await fetch(downloadUrl);
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to download video');
+        // Try to parse error json if possible, otherwise throw generic error
+        try {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to download video');
+        } catch {
+          throw new Error(`Server returned ${response.status}: Failed to download video`);
+        }
       }
 
-      alert(`다운로드 완료! 파일이 다음 폴더에 저장되었습니다:\n${data.path}`);
+      // Convert response stream to a Blob
+      const blob = await response.blob();
+
+      // Attempt to extract filename from headers if present, otherwise fallback
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = 'video.mp4';
+      if (contentDisposition && contentDisposition.includes('filename=')) {
+        const regex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+        const matches = regex.exec(contentDisposition);
+        if (matches != null && matches[1]) {
+          filename = decodeURIComponent(matches[1].replace(/['"]/g, ''));
+        }
+      } else if (videoInfo && videoInfo.title) {
+        const safeTitle = videoInfo.title.replace(/[/\\?%*:|"<>]/g, '-');
+        filename = `${safeTitle}.mp4`;
+      }
+
+      // Create a hidden anchor tag to trigger the browser download behavior
+      const urlObject = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = urlObject;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+
+      // Cleanup
+      window.URL.revokeObjectURL(urlObject);
+      document.body.removeChild(a);
 
     } catch (err) {
       setError(err.message);

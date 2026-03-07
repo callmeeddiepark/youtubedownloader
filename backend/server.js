@@ -99,7 +99,7 @@ app.get('/api/info', async (req, res) => {
 });
 
 // GET /api/download
-// Downloads the video file using yt-dlp
+// Downloads the video file using yt-dlp and streams it to the client
 app.get('/api/download', async (req, res) => {
     const videoUrl = req.query.url;
     const format = req.query.format || 'best';
@@ -109,30 +109,55 @@ app.get('/api/download', async (req, res) => {
     }
 
     try {
-        // Create local downloads folder
-        const downloadDir = path.join(os.homedir(), 'Downloads', '다운로더');
-        if (!fs.existsSync(downloadDir)) {
-            fs.mkdirSync(downloadDir, { recursive: true });
-        }
+        // Fetch metadata to get the actual title for the downloaded file
+        const info = await ytdl(videoUrl, {
+            dumpSingleJson: true,
+            noWarnings: true,
+            noCallHome: true,
+            noCheckCertificate: true,
+            youtubeSkipDashManifest: true
+        });
 
-        // Set output path for yt-dlp directly to the target folder
-        const outputPath = path.join(downloadDir, '%(title)s.%(ext)s');
+        // Clean filename of special characters
+        const safeTitle = (info.title || 'video').replace(/[/\\?%*:|"<>]/g, '-');
+        const filename = `${safeTitle}.mp4`;
 
-        // Execute yt-dlp to download and save directly to disk
-        await ytdl.exec(videoUrl, {
+        // Set headers to trigger a browser download
+        res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+        res.setHeader('Content-Type', 'video/mp4');
+
+        // Note: yt-dlp requires stdout output using `-o -`
+        const ytDlpProcess = ytdl.exec(videoUrl, {
             format: format === 'best' ? 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best' : `${format}+bestaudio[ext=m4a]/best`,
-            output: outputPath,
+            output: '-', // Output to stdout
             noWarnings: true,
             noCallHome: true,
             noCheckCertificate: true,
         });
 
-        // Respond with success and the saved path
-        res.json({ success: true, path: downloadDir });
+        // Pipe the stdout stream from yt-dlp to the Express response stream
+        ytDlpProcess.stdout.pipe(res);
+
+        // Handle errors in the stream
+        ytDlpProcess.on('error', (err) => {
+            console.error('yt-dlp stream error:', err);
+            if (!res.headersSent) {
+                res.status(500).json({ error: 'Failed to stream video' });
+            } else {
+                res.end();
+            }
+        });
+
+        // Close the connection when the download finishes
+        ytDlpProcess.on('close', () => {
+            res.end();
+        });
 
     } catch (error) {
-        console.error('Download error:', error);
-        if (!res.headersSent) res.status(500).json({ error: 'Failed to complete download' });
+        console.error('Download setup error:', error);
+        if (!res.headersSent) {
+            res.status(500).json({ error: 'Server failed to start download stream' });
+        }
     }
 });
 
