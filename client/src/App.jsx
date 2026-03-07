@@ -17,7 +17,8 @@ function App() {
     setVideoInfo(null);
 
     try {
-      const response = await fetch(`http://localhost:3001/api/info?url=${encodeURIComponent(url)}`);
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${apiUrl}/api/info?url=${encodeURIComponent(url)}`);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -48,7 +49,8 @@ function App() {
     setError(null);
 
     try {
-      const downloadUrl = `http://localhost:3001/api/download?url=${encodeURIComponent(url)}&format=${selectedFormat}`;
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const downloadUrl = `${apiUrl}/api/download?url=${encodeURIComponent(url)}&format=${selectedFormat}`;
 
       const response = await fetch(downloadUrl);
 
