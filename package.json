@@ -1,0 +1,14 @@
+{
+  "name": "video-downloader-root",
+  "version": "1.0.0",
+  "description": "Root package for running video-downloader",
+  "scripts": {
+    "start": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd backend && npm start",
+    "client": "cd client && npm run dev",
+    "install:all": "npm install && cd backend && npm install && cd ../client && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
