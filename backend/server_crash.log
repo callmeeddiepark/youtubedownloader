@@ -1,0 +1,58 @@
+
+🎬 Video Downloader Server running at http://127.0.0.1:3001
+
+/Users/jeonghyunpark/Desktop/github/video-downloader/backend/node_modules/tinyspawn/src/index.js:20
+  const error = new Error(message)
+                ^
+
+Error [ChildProcessError]: The command spawned as:
+
+  `yt-dlp https://www.youtube.com/watch?v=APP0DCkL7yE --format bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best --output /Users/jeonghyunpark/Downloads/[SMTM12-10회 풀버전] ♬아에이오우 (AEIOU) (Feat. 로꼬) (Prod. by GRAY) @본선.mp4 --no-warnings --no-call-home --no-check-certificate --merge-output-format mp4`
+
+exited with:
+
+  `{ signal: 'null', code: 1 }` 
+
+with the following trace:
+
+    at createChildProcessError (/Users/jeonghyunpark/Desktop/github/video-downloader/backend/node_modules/tinyspawn/src/index.js:20:17)
+    at ChildProcess.<anonymous> (/Users/jeonghyunpark/Desktop/github/video-downloader/backend/node_modules/tinyspawn/src/index.js:62:23)
+    at ChildProcess.emit (node:events:508:28)
+    at ChildProcess._handle.onexit (node:internal/child_process:294:12) {
+  command: 'yt-dlp https://www.youtube.com/watch?v=APP0DCkL7yE --format bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best --output /Users/jeonghyunpark/Downloads/[SMTM12-10회 풀버전] ♬아에이오우 (AEIOU) (Feat. 로꼬) (Prod. by GRAY) @본선.mp4 --no-warnings --no-call-home --no-check-certificate --merge-output-format mp4',
+  connected: false,
+  signalCode: null,
+  exitCode: 1,
+  killed: false,
+  spawnfile: 'yt-dlp',
+  spawnargs: [
+    'yt-dlp',
+    'https://www.youtube.com/watch?v=APP0DCkL7yE',
+    '--format',
+    'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+    '--output',
+    '/Users/jeonghyunpark/Downloads/[SMTM12-10회 풀버전] ♬아에이오우 (AEIOU) (Feat. 로꼬) (Prod. by GRAY) @본선.mp4',
+    '--no-warnings',
+    '--no-call-home',
+    '--no-check-certificate',
+    '--merge-output-format',
+    'mp4'
+  ],
+  pid: 21608,
+  stdout: '[youtube] Extracting URL: https://www.youtube.com/watch?v=APP0DCkL7yE\n' +
+    '[youtube] APP0DCkL7yE: Downloading webpage\n' +
+    '[youtube] APP0DCkL7yE: Downloading tv client config\n' +
+    '[youtube] APP0DCkL7yE: Downloading tv player API JSON\n' +
+    '[youtube] APP0DCkL7yE: Downloading web safari player API JSON\n' +
+    '[info] APP0DCkL7yE: Downloading 1 format(s): 18\n' +
+    '[download] Sleeping 6.00 seconds as required by the site...',
+  stderr: "/Users/jeonghyunpark/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020\n" +
+    '  warnings.warn(\n' +
+    'Deprecated Feature: Support for Python version 3.9 has been deprecated. Please update to Python 3.10 or above\n' +
+    'Deprecated Feature: The following options have been deprecated: --no-call-home\n' +
+    'Please remove them from your command/configuration to avoid future errors.\n' +
+    'See  https://github.com/yt-dlp/yt-dlp/issues/14198  for more details\n' +
+    'ERROR: unable to download video data: HTTP Error 403: Forbidden'
+}
+
+Node.js v24.14.0
