@@ -1,7 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const youtubedl = require('youtube-dl-exec');
-const ytdl = youtubedl.create('yt-dlp');
+const ytdlPath = '/opt/homebrew/bin/yt-dlp';
+const ytdl = youtubedl.create(ytdlPath);
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -44,8 +45,23 @@ app.get('/api/info', async (req, res) => {
             noWarnings: true,
             noCallHome: true,
             noCheckCertificate: true,
-            youtubeSkipDashManifest: true
+            preferFreeFormats: true,
+            youtubeSkipDashManifest: true,
+            referer: 'https://www.youtube.com/',
+            extractorArgs: 'youtube:player_client=android,ios,web,tv',
+            cookiesFromBrowser: 'chrome',
+            addHeader: [
+                'User-Agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+                'Accept:*/*',
+                'Accept-Language:en-US,en;q=0.9',
+                'Origin:https://www.youtube.com',
+                'Referer:https://www.youtube.com/'
+            ]
         });
+
+        if (!output || !output.formats) {
+            return res.status(404).json({ error: '비디오 형식을 찾을 수 없습니다.' });
+        }
 
         const info = {
             title: output.title,
@@ -53,10 +69,10 @@ app.get('/api/info', async (req, res) => {
             duration: output.duration_string || output.duration,
             channel: output.uploader,
             formats: output.formats
-                .filter(f => f.ext === 'mp4' && f.vcodec !== 'none')
+                .filter(f => f.vcodec && f.vcodec !== 'none' && f.height)
                 .map(f => {
                     const height = f.height || 0;
-                    let label = `${f.width}x${f.height}`;
+                    let label = `${f.width || '?'}x${f.height || '?'}`;
                     let qualityTag = '';
 
                     if (height >= 2160) { label = '4K (2160p)'; qualityTag = '4K'; }
@@ -104,8 +120,18 @@ app.get('/api/info', async (req, res) => {
 
         res.json(info);
     } catch (error) {
-        console.error('Error fetching info:', error);
-        res.status(500).json({ error: '영상 정보를 가져오는데 실패했습니다.' });
+        console.error('Error fetching video info:', error.message);
+        
+        let errorMessage = '영상 정보를 가져오는데 실패했습니다.';
+        if (error.message.includes('Video unavailable')) {
+            errorMessage = '동영상을 사용할 수 없습니다. (비공개 또는 삭제된 영상)';
+        } else if (error.message.includes('Sign in to confirm you’re not a bot')) {
+            errorMessage = '유튜브 봇 감지에 걸렸습니다. 잠시 후 다시 시도해 주세요.';
+        } else if (error.message.includes('HTTP Error 403')) {
+            errorMessage = '요청이 거부되었습니다. (403 Forbidden)';
+        }
+
+        res.status(500).json({ error: errorMessage });
     }
 });
 
@@ -157,6 +183,18 @@ app.post('/api/download', async (req, res) => {
             noCallHome: true,
             noCheckCertificate: true,
             mergeOutputFormat: 'mp4',
+            extractorArgs: 'youtube:player_client=android,ios,web,tv',
+            cookiesFromBrowser: 'chrome',
+            addHeader: [
+                'User-Agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+                'Accept:*/*',
+                'Accept-Language:en-US,en;q=0.9'
+            ]
+        });
+
+        subprocess.catch(err => {
+            // Promise rejection is handled here so Node doesn't crash
+            console.error('yt-dlp execution error:', err.message);
         });
 
         // Parse progress from stderr
@@ -217,6 +255,7 @@ app.get('/api/progress/:id', (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
 
     const interval = setInterval(() => {
         const dl = activeDownloads.get(downloadId);
@@ -245,6 +284,6 @@ app.get('/api/progress/:id', (req, res) => {
     });
 });
 
-app.listen(PORT, () => {
-    console.log(`\n🎬 Video Downloader Server running at http://localhost:${PORT}\n`);
+app.listen(PORT, '127.0.0.1', () => {
+    console.log(`\n🎬 Video Downloader Server running at http://127.0.0.1:${PORT}\n`);
 });
